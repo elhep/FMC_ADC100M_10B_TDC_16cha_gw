@@ -1,0 +1,2 @@
+# FMC_ADC100M_10B_TDC_16cha_gw
+ARTIQ gateware f0r FMC_ADC100M_10B_TDC_16cha
