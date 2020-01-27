@@ -1,5 +1,6 @@
 from artiq.coredevice import spi2 as spi
 from artiq.coredevice.ttl import TTLInOut, TTLOut
+from artiq.language.units import ns, us
 from coredevice.ad9528 import AD9528
 from coredevice.ad9528_default_config import AD9528_DEFAULT_CONFIG
 from coredevice.ads5296a import ADS5296A
@@ -35,10 +36,10 @@ class FmcAdc100M10bTdc16cha:
         self.adc_csn = [TTLOut(dmgr, self.channel + 79 + 5 + i, core_device) for i in range(2)]
 
         self.adc = [
-            ADS5296A(dmgr, self.channel + 13 + i*9, self.adc_spi, 1 << i, core_device=core_device) for i in range(2)
+            ADS5296A(dmgr, self.channel + 13 + i*9, self.adc_spi, self.adc_csn[i], core_device=core_device, spi_freq=500_000) for i in range(2)
         ]
         self.tdc = [
-            TDCGPX2(dmgr, self.channel + 31 + i*12, self.tdc_spi, self.tdc_csn[i], core_device=core_device) for i in range(4)
+            TDCGPX2(dmgr, self.channel + 31 + i*12, self.tdc_spi, self.tdc_csn[i], core_device=core_device, spi_freq=500_000) for i in range(4)
         ]
 
         if with_trig:
@@ -47,15 +48,27 @@ class FmcAdc100M10bTdc16cha:
         self.clock = AD9528(dmgr=dmgr,
                             spi_device=self.tdc_spi,
                             chip_select=self.clock_csn,
-                            spi_freq=5_000_000,
+                            spi_freq=10_000_000,
                             config=AD9528_DEFAULT_CONFIG,
                             core_device=core_device)
+
     @kernel
-    def initialize(self):
+    def deactivate_all_spi_devices(self):
+        self.core.break_realtime()
         for ttl in self.tdc_csn:
             ttl.on()
         self.clock_csn.on()
         for ttl in self.adc_csn:
             ttl.on()
 
-        # self.clock.initialize()
+    @kernel
+    def reset_ad9528_and_adc(self):
+        self.core.break_realtime()
+        self.adc_resetn.off()
+        delay(1*us)
+        self.adc_resetn.on()
+
+    def initialize(self):
+        self.deactivate_all_spi_devices()
+        self.reset_ad9528_and_adc()
+        self.clock.initialize()

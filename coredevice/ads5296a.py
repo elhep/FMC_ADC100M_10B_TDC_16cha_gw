@@ -3,8 +3,9 @@ from artiq.coredevice.rtio import rtio_output, rtio_input_timestamped_data
 from artiq.language import TInt32
 from artiq.language.core import kernel, delay_mu
 from artiq.language.core import rpc
-from artiq.language.units import us
+from artiq.language.units import us, ns
 from coredevice.rtlink_csr import RtlinkCsr
+from artiq.coredevice.ttl import TTLOut
 
 
 SPI_CONFIG = (0*spi.SPI_OFFLINE | 0*spi.SPI_END |
@@ -46,7 +47,7 @@ class AdcDaq:
     def get_samples(self):
         self.incomplete = False
         for _ in range(self.pretrigger+self.posttrigger):
-            ts, data = rtio_input_timestamped_data(1*us, self.channel)
+            ts, data = rtio_input_timestamped_data(self.core.seconds_to_mu(1*us), self.channel)
             if ts < 0:
                 self.incomplete = True
                 break
@@ -70,6 +71,13 @@ class ADS5296A:
 
         self.div = self.spi.frequency_to_div(spi_freq)
 
+        if isinstance(chip_select, TTLOut):
+            self.chip_select = 0
+            self.csn_device = chip_select
+        else:
+            self.chip_select = chip_select
+            self.csn_device = None
+
         phy_config = [
             [0, "data0_delay_value", 5],
             [1, "data1_delay_value", 5],
@@ -87,13 +95,62 @@ class ADS5296A:
 
     @kernel
     def write(self, addr, data):
-        self.spi.set_config_mu(SPI_CONFIG | spi.SPI_END, 24, self.div, self.chip_select)
-        self.spi.write(((addr & 0xFF) << 16) | (data & 0xFFFF))
+        self.core.break_realtime()
+        self.write_rt(addr, data)
+
+    @kernel
+    def write_rt(self, addr, data):
+        cs = self.chip_select
+        if self.chip_select == 0:
+            self.csn_device.off()
+            delay(40 * ns)
+            cs = 1
+
+        self.spi.set_config_mu(SPI_CONFIG | spi.SPI_END, 24, self.div, cs)
+        self.spi.write((((addr & 0xFF) << 16) | (data & 0xFFFF)) << 8)
+
+        if self.chip_select == 0:
+            self.csn_device.on()
+        delay(100 * ns)
 
     @kernel
     def read(self, addr) -> TInt32:
-        self.write(0x1, 1)
-        self.spi.set_config_mu(SPI_CONFIG, 8, self.div, self.chip_select)
-        self.spi.write(addr & 0xFF)
-        self.spi.set_config_mu(SPI_CONFIG | spi.SPI_INPUT | spi.SPI_END, 16, self.div, self.chip_select)
+        self.core.break_realtime()
+        return self.read_rt(addr)
+
+    @kernel
+    def enable_read_rt(self):
+        self.write_rt(0x1, 0x1)
+
+    @kernel
+    def disable_read_rt(self):
+        self.write_rt(0x1, 0x0)
+
+    @kernel
+    def read_rt(self, addr) -> TInt32:
+        cs = self.chip_select
+        if self.chip_select == 0:
+            self.csn_device.off()
+            delay(40 * ns)
+            cs = 1
+
+        self.spi.set_config_mu(SPI_CONFIG, 8, self.div, cs)
+        self.spi.write((addr & 0xFF) << 24)
+        self.spi.set_config_mu(SPI_CONFIG | spi.SPI_INPUT | spi.SPI_END, 16, self.div, cs)
+        self.spi.write(0)
+
+        if self.chip_select == 0:
+            self.csn_device.on()
+        delay(100 * ns)
+
         return self.spi.read()
+
+    @kernel
+    def enable_test_pattern(self, pattern):
+        self.core.break_realtime()
+        self.write_rt(0x1C, (1 << 14) | (pattern & 0xFFF))
+
+    @kernel
+    def disable_test_pattern(self):
+        self.core.break_realtime()
+        self.write_rt(0x1C, 0)
