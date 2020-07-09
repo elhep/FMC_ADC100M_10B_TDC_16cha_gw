@@ -4,18 +4,21 @@
 [submodule "modules/liteiclink"]
 	path = modules/liteiclink
 	url = https://github.com/enjoy-digital/liteiclink.git
-[submodule "modules/migen"]
-	path = modules/migen
-	url = https://github.com/elhep/migen.git
-[submodule "modules/misoc"]
-	path = modules/misoc
-	url = https://github.com/elhep/misoc.git
-[submodule "modules/artiq"]
-	path = modules/artiq
-	url = https://github.com/elhep/artiq.git
 [submodule "modules/nix-scripts"]
 	path = modules/nix-scripts
 	url = https://git.m-labs.hk/M-Labs/nix-scripts.git
 [submodule "modules/microscope"]
 	path = modules/microscope
 	url = https://github.com/m-labs/microscope.git
+[submodule "modules/artiq"]
+	path = modules/artiq
+	url = https://github.com/elhep/artiq.git
+	branch = afck1v1
+[submodule "modules/migen"]
+	path = modules/migen
+	url = https://github.com/elhep/migen.git
+	branch = afck1v1
+[submodule "modules/misoc"]
+	path = modules/misoc
+	url = https://github.com/elhep/misoc.git
+	branch = afck1v1
