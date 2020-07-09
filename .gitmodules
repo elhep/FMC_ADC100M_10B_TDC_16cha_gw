@@ -10,3 +10,7 @@
 [submodule "modules/microscope"]
 	path = modules/microscope
 	url = https://github.com/m-labs/microscope.git
+[submodule "modules/artiq"]
+	path = modules/artiq
+	url = https://github.com/elhep/artiq.git
+	branch = afck1v1
