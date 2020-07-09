@@ -14,3 +14,7 @@
 	path = modules/artiq
 	url = https://github.com/elhep/artiq.git
 	branch = afck1v1
+[submodule "modules/migen"]
+	path = modules/migen
+	url = https://github.com/elhep/migen.git
+	branch = afck1v1
