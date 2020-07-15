@@ -1,2 +1,0 @@
-cp nix/artiq-version.nix modules/nix-scripts/artiq-fast/pkgs/
-nix-shell -I artiqSrc=$(pwd)/modules/artiq -I repoRoot=$(pwd) --arg repo $(pwd) ./nix/dev-shell.nix

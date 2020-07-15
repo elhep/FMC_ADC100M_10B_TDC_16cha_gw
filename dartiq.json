@@ -1,0 +1,11 @@
+{
+    "python_modules": [
+        "modules/artiq",
+        "modules/liteiclink",
+        "modules/misoc",
+        "modules/migen"
+    ],
+    "copy_env_var": [
+        "XILINXD_LICENSE_FILE"
+    ]
+}
