@@ -11,8 +11,8 @@ from misoc.targets.afck1v1 import soc_afck1v1_argdict, soc_afck1v1_args
 class AfckTdc(StandaloneBase):
 
     def add_design(self):
-        FmcAdc100M10b16chaTdc.add_std(self, 1, True, iostd_single, iostd_diff, with_trig=True)
-        #FmcAdc100M10b16chaTdc.add_std(self, 2, True, iostd_single, iostd_diff, with_trig=False)
+        FmcAdc100M10b16chaTdc.add_std(self, 1, iostd_single, iostd_diff, with_trig=True)
+        #FmcAdc100M10b16chaTdc.add_std(self, 2, iostd_single, iostd_diff, with_trig=False)
 
         # self.platform.toolchain.postsynthesis_commands.append("source /home/ms/data/pw/tdc/repo/gateware/debug/insert_ila.tcl")
         # self.platform.toolchain.postsynthesis_commands.append(
