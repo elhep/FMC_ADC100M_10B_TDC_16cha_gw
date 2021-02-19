@@ -132,22 +132,41 @@ class TDCGPX2:
         self.readout = [0] * 24
 
         # Copy from evaluation board saved configuration
-        self.default_config = """
-            equal 0xA03F013F   ; Register 3, 2, 1, 0
-            equal 0x53D00186   ; Register 7, 6, 5, 4
-            equal 0x0A0013A1   ; Register 11, 10, 9, 8
-            equal 0x7DF1CCCC   ; Register 15, 14, 13, 12
-            equal 0x00000000   ; Register 19, 18, 17, 16
-            equal 0x00000000   ; Register 23, 22, 21, 20
-        """
-        self.regs = []
-        self.parse_default_config()
+        # self.default_config = """
+        #     equal 0xA03F013F   ; Register 3, 2, 1, 0
+        #     equal 0x53D00186   ; Register 7, 6, 5, 4
+        #     equal 0x0A0013A1   ; Register 11, 10, 9, 8
+        #     equal 0x7DF1CCCC   ; Register 15, 14, 13, 12
+        #     equal 0x00000000   ; Register 19, 18, 17, 16
+        #     equal 0x00000000   ; Register 23, 22, 21, 20
+        # """
+        self.regs = [
+            ( 0, 0b10111111),  # All pins but DISABLE are enabled
+            ( 1, 0b00001111),  # High res off, combine: independent channels, HIT_ENA on
+            ( 2, 0b00111101),  # Block-wise FIFO off, common FIFO off, LVDS DDR, 20b stop, 24b ref idx
+            # REFCLK period is 100ns (10MHz), to get 1ps divider must be 1000*100: 0b11000011010100000
+            ( 3, 0b10100000),  # REFCLK_DIV lower 8bits
+            ( 4, 0b10000110),  # REFCLK_DIV middle 8bits
+            ( 5, 0b00000001),  # REFCLK_DIV upper 4bits
+            ( 6, 0b11000000),  # test pattern disabled
+            ( 7, 0b01010011),  # quartz disabled, LVDS data adjustment 0ps
+            ( 8, 0b10100001),  # fixed value
+            ( 9, 0b00010011),  # fixed value
+            (10, 0b00000000),  # fixed value
+            (11, 0b00001010),  # fixed value
+            (12, 0b11001100),  # fixed value
+            (13, 0b11001100),  # fixed value
+            (14, 0b01111101),  # fixed value
+            (15, 0b01111101),  # fixed value
+            (16, 0b00000000),  # LVDS input level
+        ]
+        # self.parse_default_config()
 
-    def parse_default_config(self):
-        self.regs = re.findall(r'equal\s+0x(\w{8})', self.default_config)
-        self.regs = [re.findall(r'..', x)[::-1] for x in self.regs]
-        self.regs = sum(self.regs, [])
-        self.regs = [int(x, 16) for x in self.regs]
+    # def parse_default_config(self):
+    #     self.regs = re.findall(r'equal\s+0x(\w{8})', self.default_config)
+    #     self.regs = [re.findall(r'..', x)[::-1] for x in self.regs]
+    #     self.regs = sum(self.regs, [])
+    #     self.regs = [int(x, 16) for x in self.regs]
 
     @kernel
     def write_op(self, op, end=False):
@@ -195,12 +214,21 @@ class TDCGPX2:
         return self.spi.read()
 
     @kernel
+    def write_reg_rt(self, address, value):
+        self.write_op(0x80 | address, end=False)
+        delay(51*us)
+        self.write_data(value & 0xFF)
+        if self.chip_select == 0:
+            delay(300 * ns)
+            self.csn_device.on()
+
+    @kernel
     def write_config_registers(self):
-        # TODO: Document
         self.write_op(0x80 | 0, end=False)
         delay(51*us)
-        for r in self.regs[:18]:
-            self.write_data(r & 0xFF)
+        for r in self.regs:
+            _, data = r
+            self.write_data(data & 0xFF)
             delay(20800 * ns)
 
         if self.chip_select == 0:
@@ -227,7 +255,7 @@ class TDCGPX2:
 
         for a in range(17):
             re = self.readout[a]
-            ro = self.regs[a]
+            _, ro = self.regs[a]
             if re != ro:
                 raise ValueError("TDC GPX-2: Invalid readout at address")
 
@@ -235,6 +263,11 @@ class TDCGPX2:
     def start_measurement(self):
         self.core.break_realtime()
         self.initialization_reset()
+
+    @kernel
+    def enable_lvds_test_pattern(self):
+        self.core.break_realtime()
+        self.write_reg_rt(6, 0b11010000)
 
     @kernel
     def read_configuration(self):

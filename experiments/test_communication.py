@@ -66,6 +66,9 @@ class TestComm(EnvExperiment):
         self.get_frequency(self.fmc1, "clk1")
         self.get_frequency(self.fmc1, "adc0_lclk")
         self.get_frequency(self.fmc1, "adc1_lclk")
+
+        for i in range(4):
+            self.fmc1.tdc[i].enable_lvds_test_pattern()
         
 
 
@@ -81,10 +84,10 @@ class TestComm(EnvExperiment):
         #     input(f"{i} [ENTER]")
 
 
-        self.test_daq(adc=0)
+        # self.test_daq(adc=0)
 
-        for s in self.fmc1.adc[0].daq[0].samples:
-            print(bin(s)[2:].zfill(10), hex(s), s)
+        # for s in self.fmc1.adc[0].daq[0].samples:
+        #     print(bin(s)[2:].zfill(10), hex(s), s)
         
 
 

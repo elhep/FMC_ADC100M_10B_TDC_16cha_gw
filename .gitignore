@@ -7,3 +7,9 @@ artiq_afck1v1/**
 env/**
 scripts/env/**
 build**
+.Xil/**
+vivado*.log
+vivado*.jou
+**.vcd
+vivado*.str
+.vscode/**

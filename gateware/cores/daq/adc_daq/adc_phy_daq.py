@@ -104,30 +104,30 @@ class AdcPhyDaq(Module):
             rtlink.OInterface(data_width=24, address_width=2),  # address_width = width + 1
             rtlink.IInterface(data_width=10, timestamped=True))
 
-        self.rtlink.o.stb.attr.add(("mark_debug", "true"))
-        self.rtlink.o.address.attr.add(("mark_debug", "true"))
-        self.rtlink.o.data.attr.add(("mark_debug", "true"))
-        self.rtlink.i.data.attr.add(("mark_debug", "true"))
-        self.rtlink.i.stb.attr.add(("mark_debug", "true"))
+        # self.rtlink.o.stb.attr.add(("mark_debug", "true"))
+        # self.rtlink.o.address.attr.add(("mark_debug", "true"))
+        # self.rtlink.o.data.attr.add(("mark_debug", "true"))
+        # self.rtlink.i.data.attr.add(("mark_debug", "true"))
+        # self.rtlink.i.stb.attr.add(("mark_debug", "true"))
 
-        memory_read_port.adr.attr.add(("mark_debug", "true"))
-        memory_read_port.dat_r.attr.add(("mark_debug", "true"))
-        memory_read_port.re.attr.add(("mark_debug", "true"))
+        # memory_read_port.adr.attr.add(("mark_debug", "true"))
+        # memory_read_port.dat_r.attr.add(("mark_debug", "true"))
+        # memory_read_port.re.attr.add(("mark_debug", "true"))
 
-        memory_write_port.adr.attr.add(("mark_debug", "true"))
-        memory_write_port.dat_w.attr.add(("mark_debug", "true"))
-        memory_write_port.we.attr.add(("mark_debug", "true"))
+        # memory_write_port.adr.attr.add(("mark_debug", "true"))
+        # memory_write_port.dat_w.attr.add(("mark_debug", "true"))
+        # memory_write_port.we.attr.add(("mark_debug", "true"))
 
         trigger_rio_phy = Signal()
-        trigger_rio_phy.attr.add(("mark_debug", "true"))
+        # trigger_rio_phy.attr.add(("mark_debug", "true"))
         pretrigger_len_rio_phy = Signal.like(pretrigger_len_dclk)
         posttrigger_len_rio_phy = Signal.like(posttrigger_counter_dclk)
         transfer_done_rio_phy = Signal()
-        transfer_done_rio_phy.attr.add(("mark_debug", "true"))
+        # transfer_done_rio_phy.attr.add(("mark_debug", "true"))
 
         data_start_address_reg_rio_phy = Signal.like(data_start_address_reg_dclk)
         transfer_en_rio_phy = Signal()
-        transfer_en_rio_phy.attr.add(("mark_debug", "true"))
+        # transfer_en_rio_phy.attr.add(("mark_debug", "true"))
 
         counter_rio_phy = Signal.like(memory_read_port.adr)
 

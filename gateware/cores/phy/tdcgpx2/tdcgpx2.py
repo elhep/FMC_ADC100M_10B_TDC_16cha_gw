@@ -65,7 +65,7 @@ class TdcGpx2ChannelPhy(Module):
         # ==========================================
 
         regs = [
-            ("frame_length", max_frame_length.bit_length()),
+            ("frame_length", max_frame_length.bit_length(), 44),
             ("frame_delay_value", 5),
             ("data_delay_value", 5)
         ]
@@ -119,10 +119,10 @@ class TdcGpx2ChannelPhy(Module):
                 NextValue(bit_counter, bit_counter-2),
                 NextValue(stb_reg, 0),
                 If(bit_counter == 0,
-                   NextValue(shift_register_reg, shift_register[1:-1]),
+                   NextValue(shift_register_reg, shift_register[:-2]),
                    NextValue(stb_reg, 1),
                    If(frame_start,
-                      NextValue(bit_counter, csr.frame_length)
+                      NextValue(bit_counter, csr.frame_length-2)
                    ).Else(
                        NextState("IDLE"))
                 )
@@ -137,6 +137,13 @@ class TdcGpx2ChannelPhy(Module):
             self.stb_o.eq(stb_reg),
             shift_register_view.eq(shift_register[1:-1])
         ]
+
+        csr.frame_length.attr.add(("mark_debug", "true"))
+        bit_counter.attr.add(("mark_debug", "true"))
+        shift_register.attr.add(("mark_debug", "true"))
+        frame_start.attr.add(("mark_debug", "true"))
+        self.data_o.attr.add(("mark_debug", "true"))
+        self.stb_o.attr.add(("mark_debug", "true"))
 
 
 class SimulationWrapper(Module):

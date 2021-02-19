@@ -3,6 +3,7 @@
     "python_modules": [
         "modules/artiq",
         "modules/liteiclink",
+        "modules/microscope",
         "modules/misoc",
         "modules/migen"
     ],

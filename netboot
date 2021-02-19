@@ -1,4 +1,4 @@
 #!/bin/bash
-artiq_flash -I "ftdi_location 1:7,2" -d ./ --srcbuild -V build -t afck1v1 load
+artiq_flash -I "ftdi_location 1:3,1,1" -d ./ --srcbuild -V build -t afck1v1 load
 sleep 5s
-artiq_netboot -f ./build/software/runtime/runtime.bin -b 192.168.95.203
+artiq_netboot -f ./build/software/runtime/runtime.bin -b 192.168.1.203
