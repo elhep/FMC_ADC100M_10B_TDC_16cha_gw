@@ -131,15 +131,6 @@ class TDCGPX2:
 
         self.readout = [0] * 24
 
-        # Copy from evaluation board saved configuration
-        # self.default_config = """
-        #     equal 0xA03F013F   ; Register 3, 2, 1, 0
-        #     equal 0x53D00186   ; Register 7, 6, 5, 4
-        #     equal 0x0A0013A1   ; Register 11, 10, 9, 8
-        #     equal 0x7DF1CCCC   ; Register 15, 14, 13, 12
-        #     equal 0x00000000   ; Register 19, 18, 17, 16
-        #     equal 0x00000000   ; Register 23, 22, 21, 20
-        # """
         self.regs = [
             ( 0, 0b10111111),  # All pins but DISABLE are enabled
             ( 1, 0b00001111),  # High res off, combine: independent channels, HIT_ENA on
@@ -160,13 +151,6 @@ class TDCGPX2:
             (15, 0b01111101),  # fixed value
             (16, 0b00000000),  # LVDS input level
         ]
-        # self.parse_default_config()
-
-    # def parse_default_config(self):
-    #     self.regs = re.findall(r'equal\s+0x(\w{8})', self.default_config)
-    #     self.regs = [re.findall(r'..', x)[::-1] for x in self.regs]
-    #     self.regs = sum(self.regs, [])
-    #     self.regs = [int(x, 16) for x in self.regs]
 
     @kernel
     def write_op(self, op, end=False):
