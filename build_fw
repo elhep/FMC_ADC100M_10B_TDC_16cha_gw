@@ -1,1 +1,2 @@
-python ./gateware/afck_tdc.py --integrated-rom-size 131072 --output ./build
+#!/bin/bash
+dartiq run "python ./gateware/afck_tdc.py --integrated-rom-size 131072 --output ./build $*"

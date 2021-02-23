@@ -92,7 +92,7 @@ class FmcAdc100M10bTdc16cha:
         for tdc in self.tdc:
             tdc.initialize()
         # TDC counter reset from FMC
-        self.fmc1_idx_sel.on()
-        for i in range(4):
-            self.tdc_disable.off()
+        # self.idx_src_sel.on()
+        # for i in range(4):
+        #     self.tdc_disable[i].off()
 
