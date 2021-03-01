@@ -32,32 +32,32 @@ class AfckTdc(StandaloneBase):
         self.submodules += phy
         self.comb += [s.eq(ncs) for s in syncn]
 
-        # self.submodules += [
-        #     XilinxProbe(self.uart_phy.tx.sink.data, "uart_tx_data"),
-        #     XilinxProbe(self.uart_phy.tx.sink.stb, "uart_tx_stb"),
+        self.submodules += [
+            XilinxProbe(self.uart_phy.tx.sink.data, "uart_tx_data"),
+            XilinxProbe(self.uart_phy.tx.sink.stb, "uart_tx_stb"),
             
-        #     XilinxProbe(self.ethmac.core.sink.stb, "ethmac_sink_stb"),
-        #     XilinxProbe(self.ethmac.core.sink.data, "ethmac_sink_data"),
-        #     XilinxProbe(self.ethmac.core.source.data, "ethmac_source_data"),
-        #     XilinxProbe(self.ethmac.core.source.stb, "ethmac_source_stb"),
+            # XilinxProbe(self.ethmac.core.sink.stb, "ethmac_sink_stb"),
+            # XilinxProbe(self.ethmac.core.sink.data, "ethmac_sink_data"),
+            # XilinxProbe(self.ethmac.core.source.data, "ethmac_source_data"),
+            # XilinxProbe(self.ethmac.core.source.stb, "ethmac_source_stb"),
             
-        #     XilinxProbe(self.ethphy.source.stb, "ethphy_source_stb"),
-        #     XilinxProbe(self.ethphy.source.data, "ethphy_source_data"),
-        #     XilinxProbe(self.ethphy.sink.stb, "ethphy_sink_stb"),
-        #     XilinxProbe(self.ethphy.sink.data, "ethphy_sink_data"),
+            # XilinxProbe(self.ethphy.source.stb, "ethphy_source_stb"),
+            # XilinxProbe(self.ethphy.source.data, "ethphy_source_data"),
+            # XilinxProbe(self.ethphy.sink.stb, "ethphy_sink_stb"),
+            # XilinxProbe(self.ethphy.sink.data, "ethphy_sink_data"),
             
-        #     XilinxProbe(self.ethmac.core.preamble_errors.status, "ethmac_preamble_errors"),
-        #     XilinxProbe(self.ethmac.core.crc_errors.status, "ethmac_crc_errors"),
+            # XilinxProbe(self.ethmac.core.preamble_errors.status, "ethmac_preamble_errors"),
+            # XilinxProbe(self.ethmac.core.crc_errors.status, "ethmac_crc_errors"),
 
-        # ]
+        ]
        
-        # self.platform.toolchain.postsynthesis_commands.append("source /workspace/gateware/debug/insert_ila.tcl")
-        # self.platform.toolchain.postsynthesis_commands.append(
-        #     "batch_insert_ila {1024}")
-        # self.crg.cd_sys.clk.attr.add(("mark_dbg_hub_clk", "true"))
-        # self.crg.cd_sys.clk.attr.add(("keep", "true"))
-        # self.platform.toolchain.postsynthesis_commands.append(
-        #     "connect_debug_port dbg_hub/clk [get_nets -hierarchical -filter {mark_dbg_hub_clk == true}]")
+        self.platform.toolchain.postsynthesis_commands.append("source /workspace/gateware/debug/insert_ila.tcl")
+        self.platform.toolchain.postsynthesis_commands.append(
+            "batch_insert_ila {1024}")
+        self.crg.cd_sys.clk.attr.add(("mark_dbg_hub_clk", "true"))
+        self.crg.cd_sys.clk.attr.add(("keep", "true"))
+        self.platform.toolchain.postsynthesis_commands.append(
+            "connect_debug_port dbg_hub/clk [get_nets -hierarchical -filter {mark_dbg_hub_clk == true}]")
 
 
 def main():

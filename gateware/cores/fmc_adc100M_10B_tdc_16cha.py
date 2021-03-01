@@ -164,9 +164,8 @@ class FmcAdc100M10b16chaTdc(_FMC):
     def add_std(cls, target, fmc, iostd_single, iostd_diff, with_trig=False, adc_daq_samples=1024, tdc_daq_samples=1024):
         cls.add_extension(target, fmc, iostd_single, iostd_diff)
 
-        # dac_i2c = target.platform.request(cls.signal_name("dac_i2c", fmc))
-        # target.submodules.i2c = gpio.GPIOTristate([dac_i2c.scl, dac_i2c.sda])
-        # target.csr_devices.append("i2c")
+        dac_i2c = target.platform.request(cls.signal_name("dac_i2c", fmc))
+        target.add_i2c_bus(dac_i2c.scl, dac_i2c.sda, f"FMC{fmc} DAC I2C")
 
         for i in range(4):
             pads = target.platform.request(cls.signal_name("tdc_dis", fmc), i)
