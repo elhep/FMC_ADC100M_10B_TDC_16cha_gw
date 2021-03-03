@@ -2,10 +2,13 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../../data/pw/tdc/openMMC/src"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python.autoComplete.extraPaths": [
+			"${workspaceFolder}/modules/migen",
+			"${workspaceFolder}/modules/misoc",
+			"${workspaceFolder}/modules/artiq",
+		]
+	}
 }
