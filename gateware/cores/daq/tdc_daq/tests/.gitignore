@@ -4,3 +4,4 @@ build/**
 sim_build/**
 tdc_gpx2_daq.v
 memory.init
+venv/**

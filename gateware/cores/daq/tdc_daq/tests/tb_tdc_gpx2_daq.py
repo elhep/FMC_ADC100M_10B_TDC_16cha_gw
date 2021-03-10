@@ -34,25 +34,21 @@ class TbTdcGpx2Daq:
                     "data": dut.rtlink_data_o},
                  "output": {
                      "stb": dut.rtlink_stb_i,
-                     "data": dut.rtlink_data_i}
-            },
-            "aux": {
-                "clock": self.dut.rio_phy_clk,
-                "input": {
-                    "stb": dut.rtlink_aux_stb_o,
-                    "data": dut.rtlink_aux_data_o},
+                     "data": dut.rtlink_data_i,
+                     "addr": dut.rtlink_adr_i}
             }
         }
 
-        self.generated_data = []
-        self.collected_data = []
-        self.collected_data_aux = []
+        self.collected_data = []  # From rlink
+        self.monitor_data = []
+        self.monitor_trigger = []
 
     @cocotb.coroutine
     def write_rtlink(self, channel, address, data):
-        link_clock = self.rtlink[channel]["clock"]
+        self.dut._log.info(f"Writing to rtlink {channel} address {address}")
 
-        link_addr = self.rtlink[channel].get("addr", None)
+        link_clock = self.rtlink[channel]["clock"]
+        link_addr = self.rtlink[channel]["output"].get("addr", None)
         link_data = self.rtlink[channel]["output"]["data"]
         link_stb  = self.rtlink[channel]["output"]["stb"]
 
@@ -68,7 +64,7 @@ class TbTdcGpx2Daq:
         link_stb <= 0x0
 
     @cocotb.coroutine
-    def read_rtlink(self, channel, callback):
+    def rtlink_collector(self, channel, callback):
         link_clock = self.rtlink[channel]["clock"]
 
         link_data = self.rtlink[channel]["input"]["data"]
@@ -90,6 +86,7 @@ class TbTdcGpx2Daq:
         self.dut.data_stb_i <= 0
         self.dut.dclk_rst <= 0
         self.dut.rio_phy_rst <= 0
+        self.dut.trigger <= 0
 
         self.dut._log.info("Waiting initial 120 ns")
         yield Timer(120, 'ns')
@@ -105,74 +102,66 @@ class TbTdcGpx2Daq:
         self.dut._log.info("Reset finished")
 
     @cocotb.coroutine
-    def data_generator(self, separation=0, randomized=False, n=None):
-        def dgen():
-            max=2**len(self.dut.data_i)
-            while True:
-                for i in range(max):
-                    yield i if not randomized else randint(0, max)
-
-        data_gen = dgen()
-
-        @cocotb.coroutine
-        def process():
-            yield self.dclk_fe
-            d = next(data_gen)
-            if self.dut.daq_enabled_dclk == 1:
-                self.generated_data.append(d)
-            self.dut.data_i <= d
-            self.dut.data_stb_i <= 1
-            for _ in range(separation):
-                yield self.dclk_fe
-                self.dut.data_stb_i <= 0
-
-        if n is None:
-            while True:
-                yield process()
-        else:
-            for _ in range(n):
-                yield process()
-
-        if separation == 0:
-            self.dut.data_stb_i <= 0
-
-    def validate_data(self):
-        if len(self.generated_data) != len(self.collected_data) != len(self.collected_data_aux):
-            raise TestError("Generated data length != collected data length")
-
-        for idx, (g, c, caux) in enumerate(zip(self.generated_data, self.collected_data, self.collected_data_aux)):
-            readout = (caux << 32) | c
-            if g != readout:
-                raise TestError("{}: {:11X} != {:11X} [{:8X}  {:3X}]".format(idx, g, readout, c, caux))
+    def data_trigger_monitor(self):
+        dclk_num = 0
+        trig_num = 0
+        while True:
+            yield self.dclk_re
+            if self.dut.data_stb_i == 1:
+                self.monitor_data.append((dclk_num, int(self.dut.data_i.value.binstr, 2)))
+            if self.dut.trigger == 1:
+                self.monitor_trigger.append((dclk_num, trig_num))
+                trig_num += 1
+            dclk_num += 1
 
     @cocotb.coroutine
-    def run_for_separation(self, separation):
-        self.dut._log.info("Running test for separation {}".format(separation))
+    def data_generator(self):
+        val = 0
+        while True:
+            yield self.dclk_fe
+            self.dut.data_i <= val
+            self.dut.data_stb_i <= 0
+            if val % 10 == 0:
+                self.dut.data_stb_i <= 1
+            val = val+1 #if val < 4096 else 0
 
+    @cocotb.coroutine
+    def simple_run(self, pretrigger, posttrigger):
+        dgen = cocotb.fork(self.data_generator())
+        dmon = cocotb.fork(self.data_trigger_monitor())
+        
         yield self.reset()
         yield Timer(100, 'ns')
-        collector = cocotb.fork(self.read_rtlink("main", self.data_sink(self.collected_data)))
-        collector_aux = cocotb.fork(self.read_rtlink("aux", self.data_sink(self.collected_data_aux)))
-        yield self.write_rtlink("main", 0, 1)
+        collector = cocotb.fork(self.rtlink_collector("main", self.data_sink(self.collected_data)))
+        yield self.write_rtlink("main", 0, pretrigger)
+        yield self.write_rtlink("main", 1, posttrigger)
+        
         yield Timer(50, 'ns')
-        yield self.data_generator(separation=separation, n=100, randomized=False)
-        yield self.write_rtlink("main", 0, 0)
-        yield Timer(50, 'ns')
-        yield self.data_generator(separation=separation, n=10, randomized=False)
+        
+        yield Timer(50, 'us')
+        yield self.dclk_fe
+        self.dut.trigger <= 1
+        yield self.dclk_fe
+        self.dut.trigger <= 0
+        yield Timer(10, 'us')
 
-        self.validate_data()
+        dgen.kill()
+        dmon.kill()
 
-        collector.kill()
-        collector_aux.kill()
-
-        self.collected_data = []
-        self.collected_data_aux = []
-        self.generated_data = []
+        for trigger_idx, trigger_num in self.monitor_trigger:
+            data_idx_min = trigger_idx-pretrigger
+            data_idx_max = trigger_idx+posttrigger-1
+            data_for_trigger = filter(lambda x: data_idx_min <= x[0] <= data_idx_max, self.monitor_data)        
+            print(f"Trigger: {trigger_idx}/{trigger_num}:", [x[1] for x in list(data_for_trigger)])
+        
+        for x in self.collected_data:
+            print("trigcnt: {} data: {}".format(x & 0xF, x >> 4))
 
 
 @cocotb.test()
 def test(dut):
     tb = TbTdcGpx2Daq(dut)
+    yield tb.simple_run(20, 20)
 
-    for s in [0, 1, 100]:
-        yield tb.run_for_separation(s)
+    # for s in [0, 1, 100]:
+    #     yield tb.run_for_separation(s, 5, 5)

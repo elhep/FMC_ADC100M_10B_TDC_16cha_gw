@@ -4,7 +4,7 @@ from migen import *
 from migen.genlib.fsm import FSM
 
 
-class CircularBiffer(Module):
+class CircularBuffer(Module):
     
     def __init__(self, data_width=44, length=128):
         
@@ -92,7 +92,7 @@ def test_daq(dut, pretrigger=5, posttrigger=5):
     for i in range(len(expected_readout)):
         assert readout[i] == expected_readout[i]
 
-def testbench(dut: CircularBiffer, pretrigger=5, posttrigger=5):
+def testbench(dut, pretrigger=5, posttrigger=5):
     for i in range(10):
         yield from test_daq(dut, 31, 32)
         yield from test_daq(dut, 1, 62)
@@ -104,5 +104,5 @@ def testbench(dut: CircularBiffer, pretrigger=5, posttrigger=5):
             yield from test_daq(dut, pretrigger, posttrigger)
 
 if __name__ == "__main__":
-    dut = CircularBiffer(44, 64)
+    dut = CircularBuffer(44, 64)
     run_simulation(dut, testbench(dut), vcd_name="circular_buffer.vcd")

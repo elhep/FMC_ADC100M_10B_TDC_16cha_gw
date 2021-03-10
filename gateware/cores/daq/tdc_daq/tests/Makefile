@@ -1,4 +1,4 @@
-VERILOG_SOURCES = $(XILINX_VIVADO)/data/verilog/src/glbl.v $(PWD)/tdc_gpx2_daq.v
+VERILOG_SOURCES = $(XILINX_VIVADO)/data/verilog/src/glbl.v $(PWD)/../tdc_gpx2_daq.v
 TOPLEVEL=top
 MODULE=tb_tdc_gpx2_daq
 
