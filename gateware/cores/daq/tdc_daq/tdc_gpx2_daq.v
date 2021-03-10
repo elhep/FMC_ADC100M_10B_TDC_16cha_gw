@@ -10,6 +10,7 @@ module top(
 	input rio_phy_rst,
 	output dclk_clk,
 	input dclk_rst,
+	output trigger_dclk,
 	input rtlink_stb_i,
 	input [6:0] rtlink_data_i,
 	input [1:0] rtlink_adr_i,
@@ -22,7 +23,6 @@ reg [6:0] pretrigger_rio_phy = 7'd0;
 reg [6:0] posttrigger_rio_phy = 7'd0;
 wire [6:0] pretrigger_dclk;
 wire [6:0] posttrigger_dclk;
-wire trigger_dclk;
 reg [3:0] trigger_cnt = 4'd0;
 reg trigger_d = 1'd0;
 wire [22:0] cb_data_in;
@@ -45,13 +45,13 @@ reg [6:0] rd_ptr = 7'd0;
 reg [6:0] readout_cnt = 7'd0;
 wire re;
 reg readable = 1'd0;
-reg [22:0] dout = 23'd0;
+reg [26:0] dout = 27'd0;
 wire asyncfifo_we;
 wire asyncfifo_writable;
 wire asyncfifo_re;
 wire asyncfifo_readable;
-wire [22:0] asyncfifo_din;
-wire [22:0] asyncfifo_dout;
+wire [26:0] asyncfifo_din;
+wire [26:0] asyncfifo_dout;
 wire graycounter0_ce;
 (* no_retiming = "true" *) reg [4:0] graycounter0_q = 5'd0;
 wire [4:0] graycounter0_q_next;
@@ -65,11 +65,11 @@ reg [4:0] graycounter1_q_next_binary;
 wire [4:0] produce_rdomain;
 wire [4:0] consume_wdomain;
 wire [3:0] wrport_adr;
-wire [22:0] wrport_dat_r;
+wire [26:0] wrport_dat_r;
 wire wrport_we;
-wire [22:0] wrport_dat_w;
+wire [26:0] wrport_dat_w;
 wire [3:0] rdport_adr;
-wire [22:0] rdport_dat_r;
+wire [26:0] rdport_dat_r;
 wire i;
 wire o;
 reg toggle_i = 1'd0;
@@ -100,7 +100,7 @@ initial dummy_s <= 1'd0;
 // synthesis translate_on
 
 assign dclk_clk = dclk_clk_1;
-assign cb_data_in = {data_i, trigger_cnt, data_stb_i};
+assign cb_data_in = {data_i, data_stb_i};
 assign i = trigger;
 assign trigger_dclk = o;
 assign data_in = cb_data_in;
@@ -108,10 +108,10 @@ assign we = 1'd1;
 assign trigger1 = trigger_dclk;
 assign pretrigger = pretrigger_dclk;
 assign posttrigger = posttrigger_dclk;
-assign asyncfifo_din = data_out;
+assign asyncfifo_din = {trigger_cnt, data_out};
 assign re = readable;
 assign asyncfifo_we = stb_out;
-assign rtlink_data_o = dout[22:1];
+assign rtlink_data_o = dout[26:1];
 assign rtlink_stb_o = (dout[0] & readable);
 assign wr_port_we = we;
 assign wr_port_adr = wr_ptr;
@@ -153,7 +153,7 @@ always @(*) begin
 				next_state <= 1'd1;
 				rd_port_re_next_value0 <= 1'd1;
 				rd_port_re_next_value_ce0 <= 1'd1;
-				readout_cnt_next_value1 <= (pretrigger + posttrigger);
+				readout_cnt_next_value1 <= ((pretrigger + posttrigger) + 1'd1);
 				readout_cnt_next_value_ce1 <= 1'd1;
 			end else begin
 				rd_port_re_next_value0 <= 1'd0;
@@ -220,7 +220,7 @@ always @(posedge dclk_clk) begin
 	end
 	trigger_d <= trigger_dclk;
 	if (we) begin
-		rd_ptr <= ((wr_ptr - pretrigger) + 1'd1);
+		rd_ptr <= (wr_ptr - pretrigger);
 		wr_ptr <= (wr_ptr + 1'd1);
 	end
 	state <= next_state;
@@ -304,7 +304,7 @@ end
 assign wr_port_dat_r = buffer[memadr];
 assign rd_port_dat_r = buffer[memadr_1];
 
-reg [22:0] storage[0:15];
+reg [26:0] storage[0:15];
 reg [3:0] memadr_2;
 reg [3:0] memadr_3;
 always @(posedge dclk_clk) begin

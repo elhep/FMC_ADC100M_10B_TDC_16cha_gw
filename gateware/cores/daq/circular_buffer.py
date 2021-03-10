@@ -37,9 +37,8 @@ class CircularBuffer(Module):
         ]
         self.sync += [
             If(self.we, 
-                rd_ptr.eq(wr_ptr-self.pretrigger+1),
-                wr_ptr.eq(wr_ptr+1),
-                
+                rd_ptr.eq(wr_ptr-self.pretrigger),
+                wr_ptr.eq(wr_ptr+1)
             )
         ]
 
@@ -51,7 +50,7 @@ class CircularBuffer(Module):
             If(self.trigger == 1, 
                 NextState("READOUT"),
                 NextValue(rd_port.re, 1),
-                NextValue(readout_cnt, self.pretrigger+self.posttrigger))
+                NextValue(readout_cnt, self.pretrigger+self.posttrigger+1))
             .Else(
                 NextValue(rd_port.re, 0)
             )

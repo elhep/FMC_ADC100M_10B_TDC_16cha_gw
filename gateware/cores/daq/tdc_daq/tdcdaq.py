@@ -51,7 +51,7 @@ class TdcDaq(Module):
         posttrigger_rio_phy = Signal.like(pretrigger_rio_phy)
         pretrigger_dclk = Signal.like(pretrigger_rio_phy)
         posttrigger_dclk = Signal.like(posttrigger_rio_phy)
-        trigger_dclk = Signal()
+        self.trigger_dclk = trigger_dclk = Signal()
 
         # Interface - rtlink
         self.rtlink = rtlink_iface = rtlink.Interface(
@@ -77,16 +77,15 @@ class TdcDaq(Module):
 
         # Data format (MSb first):
         # <tdc_data, 22b>
-        # <trigger_cnt, trigger_cnt_len>
         # <data valid, 1b>
 
         cb_data_in = Signal(data_width+1)
         self.comb += [
-            cb_data_in.eq(Cat(stb_i, trigger_cnt, data_i))
+            cb_data_in.eq(Cat(stb_i, data_i))
         ]
 
-        circular_buffer = ClockDomainsRenamer({"sys": "dclk"})(CircularBuffer(data_width+1, circular_buffer_length))
-        async_fifo = ClockDomainsRenamer({"write": "dclk", "read": "rio_phy"})(AsyncFIFOBuffered(data_width+1, 16))
+        circular_buffer = ClockDomainsRenamer({"sys": "dclk"})(CircularBuffer(len(cb_data_in), circular_buffer_length))
+        async_fifo = ClockDomainsRenamer({"write": "dclk", "read": "rio_phy"})(AsyncFIFOBuffered(data_width+trigger_cnt_len+1, 16))
         trigger_cdc = PulseSynchronizer("rio_phy", "dclk")
         pretrigger_cdc = MultiReg(pretrigger_rio_phy, pretrigger_dclk, "dclk")
         posttrigger_cdc = MultiReg(posttrigger_rio_phy, posttrigger_dclk, "dclk")
@@ -101,7 +100,7 @@ class TdcDaq(Module):
             circular_buffer.trigger.eq(trigger_dclk),
             circular_buffer.pretrigger.eq(pretrigger_dclk),
             circular_buffer.posttrigger.eq(posttrigger_dclk),
-            async_fifo.din.eq(circular_buffer.data_out),
+            async_fifo.din.eq(Cat(circular_buffer.data_out, trigger_cnt)),
             async_fifo.re.eq(async_fifo.readable),
             async_fifo.we.eq(circular_buffer.stb_out),
             rtlink_iface.i.data.eq(async_fifo.dout[1:]),  # two LSb are data valid (TDC frame)
@@ -141,6 +140,8 @@ class SimulationWrapper(Module):
         dut.rtlink_channels[0].interface.i.stb.name_override = "rtlink_stb_o"
         dut.rtlink_channels[0].interface.i.data.name_override = "rtlink_data_o"
 
+        dut.trigger_dclk.name_override = "trigger_dclk"
+
         self.io = {
             cd_dclk.clk,
             cd_dclk.rst,
@@ -157,7 +158,9 @@ class SimulationWrapper(Module):
             dut.rtlink_channels[0].interface.o.data,
 
             dut.rtlink_channels[0].interface.i.stb,
-            dut.rtlink_channels[0].interface.i.data
+            dut.rtlink_channels[0].interface.i.data,
+
+            dut.trigger_dclk
         }
 
 
